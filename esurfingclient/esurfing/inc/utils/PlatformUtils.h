@@ -29,7 +29,7 @@
 #endif
 
 #define XML_BUFFER_SIZE 1024
-#define NAME_LENGTH 128
+#define NAME_LENGTH 256
 
 typedef enum
 {
