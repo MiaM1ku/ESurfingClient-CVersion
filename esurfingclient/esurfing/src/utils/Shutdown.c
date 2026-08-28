@@ -53,10 +53,12 @@ void shut(const int8_t exit_code)
     }
 #endif
 
+#ifndef __OPENWRT__
     if (g_need_restart)
     {
         restart_process();
     }
+#endif
 
     exit(exit_code);
 }

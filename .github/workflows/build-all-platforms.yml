@@ -29,6 +29,7 @@ on:
           - openwrt-luci-apk
           - openwrt-x86_64-ipk
           - openwrt-x86_64-apk
+          - openwrt-arm64-ipk
           - openwrt-ramips_mt7621-ipk
           - openwrt-ramips_mt7621-apk
           - openwrt-mediatek_filogic-ipk
@@ -152,6 +153,16 @@ jobs:
       release: ${{ needs.get-version.outputs.release }}
       sdk_version: ${{ needs.get-version.outputs.openwrt_apk_sdk_version }}
 
+  openwrt-arm64-ipk:
+    if: github.event.inputs.platforms == 'all' || github.event.inputs.platforms == 'openwrt-arm64-ipk'
+    uses: ./.github/workflows/build-openwrt-ipk-arm64.yml
+    secrets: inherit
+    needs: get-version
+    with:
+      version: ${{ needs.get-version.outputs.version }}
+      release: ${{ needs.get-version.outputs.release }}
+      sdk_version: ${{ needs.get-version.outputs.openwrt_ipk_sdk_version }}
+
   openwrt-ramips_mt7621-ipk:
     if: github.event.inputs.platforms == 'all' || github.event.inputs.platforms == 'openwrt-ramips_mt7621-ipk'
     uses: ./.github/workflows/build-openwrt-ipk-ramips_mt7621.yml
@@ -220,6 +231,7 @@ jobs:
       - macos-arm64
       - openwrt-luci-ipk
       - openwrt-x86_64-ipk
+      - openwrt-arm64-ipk
       - openwrt-ramips_mt7621-ipk
       - openwrt-mediatek_filogic-ipk
       - openwrt-qualcommax_ipq60xx-ipk
