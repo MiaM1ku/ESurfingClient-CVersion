@@ -6,7 +6,6 @@
 #include "utils/cJSON.h"
 #include "NetClient.h"
 #include "States.h"
-#include "utils/Shutdown.h"
 
 static const char* listenAddr = "http://0.0.0.0:8888";
 static sim_thread_t* web_thread;
@@ -219,7 +218,7 @@ static void logFn(const char ch, void *param)
     }
 }
 
-int web_server(void* arg)
+static int web_server(void* arg)
 {
     tl_thread_idx = (int8_t)(intptr_t)arg;
     struct mg_mgr mgr;

@@ -274,7 +274,7 @@ void sleep_ms(const uint64_t ms, const bool can_stop)
 
         while (elapsed < ms && g_thread_keep_alive)
         {
-            if (tl_thread_idx != -1)
+            if (tl_thread_idx > -1)
             {
                 if (g_prog_status[tl_thread_idx].runtime_status.is_running == false || g_prog_status[tl_thread_idx].runtime_status.is_need_reset)
                 {

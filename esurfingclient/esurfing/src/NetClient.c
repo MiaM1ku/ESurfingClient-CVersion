@@ -161,7 +161,7 @@ static size_t header_cb(const void* contents, const size_t size, const size_t nm
 
     if (real_size >= 9 && strncasecmp(header, "Location:", 9) == 0)
     {
-        if (tl_thread_idx != -1)
+        if (tl_thread_idx > -1)
         {
             if (!g_prog_status[tl_thread_idx].last_location_lock)
             {
@@ -383,7 +383,7 @@ http_resp_t post(const char* url, const char* data)
     if (resp_code == 302)
     {
         LOG_DEBUG("重定向, 响应码: 302");
-        if (tl_thread_idx != -1) LOG_VERBOSE("重定向至: %s", g_prog_status[tl_thread_idx].last_location);
+        if (tl_thread_idx > -1) LOG_VERBOSE("重定向至: %s", g_prog_status[tl_thread_idx].last_location);
         resp.status = REQUEST_REDIRECT;
         return resp;
     }
@@ -416,7 +416,7 @@ http_resp_t get(const char* url)
 
     struct curl_slist* headers = NULL;
 
-    if (tl_thread_idx != -1)
+    if (tl_thread_idx > -1)
     {
         snprintf(ua, MAX_LEN, "User-Agent: %s", safe_str(g_prog_status[tl_thread_idx].login_cfg.user_agent));
         snprintf(c_id, MAX_LEN, "Client-ID: %s", safe_str(g_prog_status[tl_thread_idx].auth_cfg.client_id));
@@ -445,7 +445,7 @@ http_resp_t get(const char* url)
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 0L);
-    if (tl_thread_idx != -1)
+    if (tl_thread_idx > -1)
     {
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_cb);
@@ -478,7 +478,7 @@ http_resp_t get(const char* url)
     if (resp_code == 302)
     {
         LOG_DEBUG("重定向, 响应码: 302");
-        if (tl_thread_idx != -1) LOG_VERBOSE("重定向至: %s", g_prog_status[tl_thread_idx].last_location);
+        if (tl_thread_idx > -1) LOG_VERBOSE("重定向至: %s", g_prog_status[tl_thread_idx].last_location);
         resp.status = REQUEST_REDIRECT;
         return resp;
     }
