@@ -125,7 +125,7 @@ cd openssl-4.0.0
     no-ts
 
 make -j$(nproc)
-make install
+sudo make install
 ```
 
 ### 4. 使用指定配置编译安装 libcurl 
@@ -196,7 +196,7 @@ cd curl-8.20.0
     --disable-sspi
 
 make -j$(nproc)
-make install
+sudo make install
 ```
 
 ### 5. 编译本程序
@@ -225,7 +225,7 @@ cmake --build build --target ESurfingClient -j$(nproc)
 
 ```shell
 # 示例系统: Debian 13
-sudo apt build-essential \
+sudo apt install build-essential \
          cmake \
          wget \
          gcc \
@@ -291,12 +291,13 @@ cd openssl-4.0.0
     no-ts
 
 make -j$(nproc)
-make install
+sudo make install
 ```
 
 ### 3. 使用指定配置编译安装 libcurl
 
 ```shell
+cd /tmp
 wget https://curl.se/download/curl-8.20.0.tar.gz
 tar -xzf curl-8.20.0.tar.gz
 cd curl-8.20.0
@@ -360,7 +361,7 @@ cd curl-8.20.0
     --disable-versioned-symbols
 
 make -j$(nproc)
-make install
+sudo make install
 ```
 
 ### 4. 编译本程序
@@ -371,7 +372,9 @@ export CMAKE_PREFIX_PATH=/usr/local:$CMAKE_PREFIX_PATH
 # 根据自身情况判断路径
 cd /path/to/esurfingclient/esurfing
 
-cmake .
+cmake . -B build
+
+cd build
 
 make -j$(nproc)
 ```

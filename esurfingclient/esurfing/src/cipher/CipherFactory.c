@@ -95,7 +95,7 @@ static cipher_interface_t* create_cipher_factory(const char* algo_id)
             iv_C32C68F9_CA81_4260_A329_BBAFD1A9CCD1
         );
     }
-    // 自实现 3DES-CBC 两层(PC)
+    // 3DES-CBC (PC)
     if (strcmp(algo_id, "1A7343EC-7F9B-4570-BF58-16279A81116B") == 0)
     {
         LOG_DEBUG("命中 1A7343EC-7F9B-4570-BF58-16279A81116B");
@@ -134,7 +134,7 @@ static cipher_interface_t* create_cipher_factory(const char* algo_id)
             key3_60639D8B_272E_4A4D_976E_AA270987A169
         );
     }
-    // AB6C8
+    // MOD_XTEA_CBC (PC)
     if (strcmp(algo_id, "AB6C8EBE-B8F8-4C08-8222-69A3B5E86A91") == 0)
     {
         LOG_DEBUG("命中 AB6C8EBE-B8F8-4C08-8222-69A3B5E86A91");
