@@ -48,7 +48,7 @@ sudo apt install -y cmake \
 
 ```shell
 # 根据自身情况判断路径
-cd /path/to/esurfingclient/esurfing
+cd /path/to/esurfingclient/main
 
 cat > toolchain-mingw64.cmake << 'EOF'
       set(CMAKE_SYSTEM_NAME Windows)
@@ -203,7 +203,7 @@ sudo make install
 
 ```shell
 # 根据自身情况判断路径
-cd /path/to/esurfingclient/esurfing
+cd /path/to/esurfingclient/main
           
 cmake \
     -G Ninja \
@@ -370,7 +370,7 @@ sudo make install
 export CMAKE_PREFIX_PATH=/usr/local:$CMAKE_PREFIX_PATH
 
 # 根据自身情况判断路径
-cd /path/to/esurfingclient/esurfing
+cd /path/to/esurfingclient/main
 
 cmake . -B build
 

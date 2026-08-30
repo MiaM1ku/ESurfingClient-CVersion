@@ -172,7 +172,7 @@ sudo systemctl status esurfingclient
 sudo launchctl bootout system /Library/LaunchDaemons/com.esurfingclient.auth.plist
 sudo launchctl bootstrap system /Library/LaunchDaemons/com.esurfingclient.auth.plist
 # 查看状态
-sudo launchctl list | grep esurfing
+sudo launchctl list | grep main
 ```
 
 > [!TIP]

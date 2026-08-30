@@ -54,7 +54,7 @@ jobs:
       - name: 获取版本号
         id: version
         run: |
-          cd esurfingclient/esurfing
+          cd esurfingclient/main
           MAJOR=$(grep -oP 'set\(PROGRAM_VERSION_MAJOR \K\d+' CMakeLists.txt)
           MINOR=$(grep -oP 'set\(PROGRAM_VERSION_MINOR \K\d+' CMakeLists.txt)
           PATCH=$(grep -oP 'set\(PROGRAM_VERSION_PATCH \K\d+' CMakeLists.txt)

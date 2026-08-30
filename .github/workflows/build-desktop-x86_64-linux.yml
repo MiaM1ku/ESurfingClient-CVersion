@@ -189,7 +189,7 @@ jobs:
         run: |
           export CMAKE_PREFIX_PATH=/usr/local:$CMAKE_PREFIX_PATH
           
-          cd esurfingclient/esurfing
+          cd esurfingclient/main
           
           cmake -DCMAKE_VERBOSE_MAKEFILE=ON \
             -DCMAKE_BUILD_TYPE=Release \
@@ -230,7 +230,7 @@ jobs:
 
       - name: 处理 web 文件
         run: |
-          cp -r esurfingclient/esurfing/portal ./
+          cp -r esurfingclient/main/portal ./
           mkdir portal/assets/css
           
           wget -O portal/assets/js/alpine.js https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js

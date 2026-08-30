@@ -715,12 +715,12 @@ bool load_cfg()
         if (chn == NULL)
         {
             LOG_WARN("配置 %" PRIu8 " channel 参数不存在, 使用默认通道", i + 1);
-            snprintf(g_prog_status[valid_i].login_cfg.chn, CHN_LEN, "%s", "phone");
+            snprintf(g_prog_status[valid_i].login_cfg.chn, CHN_LEN, "%s", "pc");
         }
         else if (chn->valuestring[0] == '\0')
         {
             LOG_WARN("配置 %" PRIu8 " channel 参数为空, 使用默认通道", i + 1);
-            snprintf(g_prog_status[valid_i].login_cfg.chn, CHN_LEN, "%s", "phone");
+            snprintf(g_prog_status[valid_i].login_cfg.chn, CHN_LEN, "%s", "pc");
         }
         else
         {
@@ -734,9 +734,9 @@ bool load_cfg()
             LOG_DEBUG("使用 UA: %s", g_prog_status[valid_i].login_cfg.user_agent);
             LOG_DEBUG("当前使用下标: %" PRIu8, valid_i);
         }
-        else
+        else if(strcmp(g_prog_status[0].login_cfg.chn, "phone") == 0)
         {
-            snprintf(g_prog_status[valid_i].login_cfg.user_agent, USER_AGENT_LEN, "CCTP/android64_vpn/2093");
+            snprintf(g_prog_status[valid_i].login_cfg.user_agent, USER_AGENT_LEN, "CCTP/Linux64/1003");
             LOG_DEBUG("使用 UA: %s", g_prog_status[valid_i].login_cfg.user_agent);
             LOG_DEBUG("当前使用下标: %" PRIu8, valid_i);
         }
@@ -827,12 +827,12 @@ bool load_cfg()
         if (chn == NULL)
         {
             LOG_WARN("配置 %" PRIu8 " channel 参数不存在, 使用默认通道", i + 1);
-            snprintf(g_prog_status[0].login_cfg.chn, CHN_LEN, "%s", "phone");
+            snprintf(g_prog_status[0].login_cfg.chn, CHN_LEN, "%s", "pc");
         }
         else if (chn->valuestring[0] == '\0')
         {
             LOG_WARN("配置 %" PRIu8 " channel 参数为空, 使用默认通道", i + 1);
-            snprintf(g_prog_status[0].login_cfg.chn, CHN_LEN, "%s", "phone");
+            snprintf(g_prog_status[0].login_cfg.chn, CHN_LEN, "%s", "pc");
         }
         else
         {
@@ -846,9 +846,9 @@ bool load_cfg()
             LOG_DEBUG("使用 UA: %s", g_prog_status[0].login_cfg.user_agent);
             LOG_DEBUG("当前使用下标: 0");
         }
-        else
+        else if(strcmp(g_prog_status[0].login_cfg.chn, "phone") == 0)
         {
-            snprintf(g_prog_status[0].login_cfg.user_agent, USER_AGENT_LEN, "CCTP/android64_vpn/2093");
+            snprintf(g_prog_status[0].login_cfg.user_agent, USER_AGENT_LEN, "CCTP/Linux64/1003");
             LOG_DEBUG("使用 UA: %s", g_prog_status[0].login_cfg.user_agent);
             LOG_DEBUG("当前使用下标: 0");
         }

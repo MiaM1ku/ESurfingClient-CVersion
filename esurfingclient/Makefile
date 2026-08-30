@@ -24,7 +24,7 @@ endif
 
 define Build/Prepare
 	mkdir -p $(PKG_BUILD_DIR)
-	$(CP) $(CURDIR)/esurfing/* $(PKG_BUILD_DIR)/
+	$(CP) $(CURDIR)/main/* $(PKG_BUILD_DIR)/
 endef
 
 CMAKE_SOURCE_SUBDIR:=.

@@ -46,7 +46,7 @@ jobs:
 
       - name: 创建工具链
         run: |
-          cd esurfingclient/esurfing
+          cd esurfingclient/main
           
           cat > toolchain-mingw64.cmake << 'EOF'
           set(CMAKE_SYSTEM_NAME Windows)
@@ -211,7 +211,7 @@ jobs:
 
       - name: 构建 ESurfingClient 程序
         run: |
-          cd esurfingclient/esurfing
+          cd esurfingclient/main
           
           cmake -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
@@ -267,7 +267,7 @@ jobs:
 
       - name: 处理 web 文件
         run: |
-          cp -r esurfingclient/esurfing/portal ./
+          cp -r esurfingclient/main/portal ./
           mkdir portal/assets/css
           
           wget -O portal/assets/js/alpine.js https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js

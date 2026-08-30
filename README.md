@@ -48,7 +48,7 @@
 |  macOS  |       arm64        |    /     |      macOS 13       |    macOS 14     |
 | OpenWrt |       x86_64       |   opkg   |    OpenWrt 15.05    | OpenWrt 19.07.0 |
 | OpenWrt |       x86_64       |   apk    | OpenWrt 25.12.0-rc1 | OpenWrt 25.12.0 |
-| OpenWrt |       arm64        |   opkg   |    OpenWrt 15.05    | OpenWrt 19.07.0 |
+| OpenWrt |     通用 arm64     |   opkg   |    OpenWrt 15.05    | OpenWrt 19.07.0 |
 | OpenWrt |   ramips_mt7621    |   opkg   |    OpenWrt 15.05    | OpenWrt 19.07.0 |
 | OpenWrt |   ramips_mt7621    |   apk    | OpenWrt 25.12.0-rc1 | OpenWrt 25.12.0 |
 | OpenWrt | qualcommax_ipq60xx |   opkg   |    OpenWrt 15.05    | OpenWrt 19.07.0 |
@@ -103,6 +103,12 @@
 
 > [!WARNING]
 > 不要让我发现有人拿去做路由器贩卖喔
+
+## 其他
+
+广东天翼校园网 QQ 交流群 (转自 [ESurfingPy-CLI
+](https://github.com/Pandaft/ESurfingPy-CLI)): 791455104
+[[点此加入]](http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=yTA84KiemCppMD5Y2CDepUsnVRo59dOS&authKey=CH%2Bb2yFiTVPqLOjdwrEGXGVvmhWTURTFX8yM5eRA7ipWh5fOKAIpJRqCKDIWZT7V&noverify=0&group_code=791455104)
 
 # 赞助 👍
 
