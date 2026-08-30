@@ -19,9 +19,7 @@ on:
         type: string
 
 env:
-  SDK_URL: "https://openlist.xylg.com:20001/d/openwrt"
   SDK_NAME: "openwrt-sdk-qualcommax-ipq60xx_gcc-13.3.0_musl.Linux-x86_64"
-  SIGN: "?sign=uAFe1eM2MaZDZySkAAxKMuU9Tn7QJdS6VklJfdjxZ9o=:0"
 
 jobs:
   build:
@@ -62,7 +60,7 @@ jobs:
       - name: 下载 SDK
         if: steps.cache-openwrt-sdk.outputs.cache-hit != 'true'
         run: |
-          wget ${{ env.SDK_URL }}/${{ env.SDK_NAME }}.tar.zst${{ env.SIGN }} -O ${{ env.SDK_NAME }}.tar.zst
+          wget https://openlist.xylg.com:20001/sd/openwrt-qualcommax_ipq60xx-ipk -O ${{ env.SDK_NAME }}.tar.zst
 
       - name: 解压 SDK
         run: |
