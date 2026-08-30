@@ -9,7 +9,7 @@ typedef struct {
     uint32_t k1[4];
     uint32_t k2[4];
     uint32_t iv[2];
-} ab6c8_ctx_t;
+} ab6c8_linux_ctx_t;
 
 static uint32_t bswap32(const uint32_t x)
 {
@@ -88,7 +88,7 @@ static void ab6c8_block_encrypt(uint32_t* v0_le, uint32_t* v1_le, const uint32_t
 static char* ab6c8_encrypt(cipher_interface_t* self, const char* text)
 {
     if (!self || !text) return NULL;
-    ab6c8_ctx_t* ctx = self->private_data;
+    ab6c8_linux_ctx_t* ctx = self->private_data;
     if (!ctx) return NULL;
     const size_t len = s_strlen(text);
     size_t padded_len = 0;
@@ -119,7 +119,7 @@ static char* ab6c8_encrypt(cipher_interface_t* self, const char* text)
 static char* ab6c8_decrypt(cipher_interface_t* self, const char* hex)
 {
     if (!self || !hex) return NULL;
-    ab6c8_ctx_t* ctx = self->private_data;
+    ab6c8_linux_ctx_t* ctx = self->private_data;
     if (!ctx) return NULL;
     size_t ct_len = 0;
     uint8_t* ct = hex_2_bytes(hex, &ct_len);
@@ -158,12 +158,12 @@ static void ab6c8_destroy(cipher_interface_t* self)
     s_free(self);
 }
 
-cipher_interface_t* create_ab6c8_cipher(const uint32_t* key0, const uint32_t* key1,
+cipher_interface_t* create_ab6c8_linux_cipher(const uint32_t* key0, const uint32_t* key1,
                                         const uint32_t* key2, const uint32_t* iv)
 {
     if (!key0 || !key1 || !key2 || !iv) return NULL;
     cipher_interface_t* ci = s_calloc(1, sizeof(cipher_interface_t));
-    ab6c8_ctx_t* ctx = s_calloc(1, sizeof(ab6c8_ctx_t));
+    ab6c8_linux_ctx_t* ctx = s_calloc(1, sizeof(ab6c8_linux_ctx_t));
     memcpy(ctx->k0, key0, 4 * sizeof(uint32_t));
     memcpy(ctx->k1, key1, 4 * sizeof(uint32_t));
     memcpy(ctx->k2, key2, 4 * sizeof(uint32_t));

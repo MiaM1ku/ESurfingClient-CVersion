@@ -11,7 +11,7 @@ typedef struct {
     uint32_t key1[4];
     uint32_t key2[4];
     uint32_t key3[4];
-} mod_xtea_pc_data_t;
+} mod_xtea_linux_data_t;
 
 static uint32_t get_uint32_be(const uint8_t* data, const size_t offset)
 {
@@ -31,7 +31,7 @@ static uint32_t bswap32(const uint32_t x)
     return x >> 24 | (x >> 8 & 0x0000FF00u) | (x << 8 & 0x00FF0000u) | x << 24;
 }
 
-static void xtea_encrypt_block_pc(uint32_t* v0, uint32_t* v1, const uint32_t* key)
+static void xtea_encrypt_block(uint32_t* v0, uint32_t* v1, const uint32_t* key)
 {
     uint32_t sum = 0;
     const uint32_t ks[4] = {
@@ -47,7 +47,7 @@ static void xtea_encrypt_block_pc(uint32_t* v0, uint32_t* v1, const uint32_t* ke
     }
 }
 
-static void xtea_decrypt_block_pc(uint32_t* v0, uint32_t* v1, const uint32_t* key)
+static void xtea_decrypt_block(uint32_t* v0, uint32_t* v1, const uint32_t* key)
 {
     uint32_t sum = XTEA_DELTA * XTEA_NUM_ROUNDS;
     const uint32_t ks[4] = {
@@ -63,10 +63,10 @@ static void xtea_decrypt_block_pc(uint32_t* v0, uint32_t* v1, const uint32_t* ke
     }
 }
 
-static char* mod_xtea_pc_encrypt(cipher_interface_t* self, const char* text)
+static char* mod_xtea_encrypt(cipher_interface_t* self, const char* text)
 {
     if (!self || !text) return NULL;
-    mod_xtea_pc_data_t* data = self->private_data;
+    mod_xtea_linux_data_t* data = self->private_data;
     if (!data) return NULL;
     const size_t text_len = strlen(text);
     size_t padded_len;
@@ -79,9 +79,9 @@ static char* mod_xtea_pc_encrypt(cipher_interface_t* self, const char* text)
     {
         uint32_t v0 = get_uint32_be(output, i);
         uint32_t v1 = get_uint32_be(output, i + 4);
-        xtea_encrypt_block_pc(&v0, &v1, data->key1);
-        xtea_encrypt_block_pc(&v0, &v1, data->key2);
-        xtea_encrypt_block_pc(&v0, &v1, data->key3);
+        xtea_encrypt_block(&v0, &v1, data->key1);
+        xtea_encrypt_block(&v0, &v1, data->key2);
+        xtea_encrypt_block(&v0, &v1, data->key3);
         set_uint32_be(output, i, v0);
         set_uint32_be(output, i + 4, v1);
     }
@@ -90,10 +90,10 @@ static char* mod_xtea_pc_encrypt(cipher_interface_t* self, const char* text)
     return hex;
 }
 
-static char* mod_xtea_pc_decrypt(cipher_interface_t* self, const char* hex)
+static char* mod_xtea_decrypt(cipher_interface_t* self, const char* hex)
 {
     if (!self || !hex) return NULL;
-    mod_xtea_pc_data_t* data = self->private_data;
+    mod_xtea_linux_data_t* data = self->private_data;
     if (!data) return NULL;
     size_t bytes_len;
     uint8_t* bytes = hex_2_bytes(hex, &bytes_len);
@@ -105,9 +105,9 @@ static char* mod_xtea_pc_decrypt(cipher_interface_t* self, const char* hex)
     {
         uint32_t v0 = get_uint32_be(output, i);
         uint32_t v1 = get_uint32_be(output, i + 4);
-        xtea_decrypt_block_pc(&v0, &v1, data->key3);
-        xtea_decrypt_block_pc(&v0, &v1, data->key2);
-        xtea_decrypt_block_pc(&v0, &v1, data->key1);
+        xtea_decrypt_block(&v0, &v1, data->key3);
+        xtea_decrypt_block(&v0, &v1, data->key2);
+        xtea_decrypt_block(&v0, &v1, data->key1);
         set_uint32_be(output, i, v0);
         set_uint32_be(output, i + 4, v1);
     }
@@ -119,7 +119,7 @@ static char* mod_xtea_pc_decrypt(cipher_interface_t* self, const char* hex)
     return result;
 }
 
-static void mod_xtea_pc_destroy(cipher_interface_t* self)
+static void mod_xtea_destroy(cipher_interface_t* self)
 {
     if (self)
     {
@@ -128,18 +128,18 @@ static void mod_xtea_pc_destroy(cipher_interface_t* self)
     }
 }
 
-cipher_interface_t* create_mod_xtea_pc_cipher(const uint32_t* key1, const uint32_t* key2,
+cipher_interface_t* create_mod_xtea_linux_cipher(const uint32_t* key1, const uint32_t* key2,
                                               const uint32_t* key3)
 {
     if (!key1 || !key2 || !key3) return NULL;
     cipher_interface_t* cipher = s_malloc(sizeof(cipher_interface_t));
-    mod_xtea_pc_data_t* data = s_malloc(sizeof(mod_xtea_pc_data_t));
+    mod_xtea_linux_data_t* data = s_malloc(sizeof(mod_xtea_linux_data_t));
     memcpy(data->key1, key1, 4 * sizeof(uint32_t));
     memcpy(data->key2, key2, 4 * sizeof(uint32_t));
     memcpy(data->key3, key3, 4 * sizeof(uint32_t));
-    cipher->encrypt = mod_xtea_pc_encrypt;
-    cipher->decrypt = mod_xtea_pc_decrypt;
-    cipher->destroy = mod_xtea_pc_destroy;
+    cipher->encrypt = mod_xtea_encrypt;
+    cipher->decrypt = mod_xtea_decrypt;
+    cipher->destroy = mod_xtea_destroy;
     cipher->private_data = data;
     return cipher;
 }

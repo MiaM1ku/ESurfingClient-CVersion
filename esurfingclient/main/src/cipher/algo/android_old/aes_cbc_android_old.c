@@ -9,7 +9,7 @@ typedef struct {
     uint8_t key1[16];
     uint8_t key2[16];
     uint8_t iv[16];
-} aes_cbc_data_t;
+} aes_cbc_android_old_data_t;
 
 static uint8_t* aes_encrypt_cbc(const uint8_t* data, size_t data_len, 
                                 const uint8_t* key, const uint8_t* iv, 
@@ -94,7 +94,7 @@ static uint8_t* aes_decrypt_cbc(const uint8_t* data, size_t data_len,
 static char* aes_cbc_encrypt(cipher_interface_t* self, const char* text)
 {
     if (!self || !text) return NULL;
-    aes_cbc_data_t* data = self->private_data;
+    aes_cbc_android_old_data_t* data = self->private_data;
     if (!data) return NULL;
     const size_t text_len = strlen(text);
     size_t r1_len;
@@ -113,7 +113,7 @@ static char* aes_cbc_encrypt(cipher_interface_t* self, const char* text)
 static char* aes_cbc_decrypt(cipher_interface_t* self, const char* hex)
 {
     if (!self || !hex) return NULL;
-    aes_cbc_data_t* data = self->private_data;
+    aes_cbc_android_old_data_t* data = self->private_data;
     if (!data) return NULL;
     size_t bytes_len;
     uint8_t* bytes = hex_2_bytes(hex, &bytes_len);
@@ -156,11 +156,11 @@ static void aes_cbc_destroy(cipher_interface_t* self)
     }
 }
 
-cipher_interface_t* create_aes_cbc_cipher(const uint8_t* key1, const uint8_t* key2, const uint8_t* iv)
+cipher_interface_t* create_aes_cbc_android_old_cipher(const uint8_t* key1, const uint8_t* key2, const uint8_t* iv)
 {
     if (!key1 || !key2 || !iv) return NULL;
     cipher_interface_t* cipher = s_malloc(sizeof(cipher_interface_t));
-    aes_cbc_data_t* data = s_malloc(sizeof(aes_cbc_data_t));
+    aes_cbc_android_old_data_t* data = s_malloc(sizeof(aes_cbc_android_old_data_t));
     memcpy(data->key1, key1, 16);
     memcpy(data->key2, key2, 16);
     memcpy(data->iv, iv, 16);

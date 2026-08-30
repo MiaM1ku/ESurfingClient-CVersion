@@ -9,7 +9,7 @@
 typedef struct {
     uint8_t key1[24];
     uint8_t key2[24];
-} desede_ecb_data_t;
+} desede_ecb_android_old_data_t;
 
 static uint8_t* desede_encrypt_ecb(const uint8_t* data, const size_t data_len,
                                    const uint8_t* key, size_t* out_len)
@@ -90,7 +90,7 @@ static uint8_t* desede_decrypt_ecb(const uint8_t* data, const size_t data_len,
 static char* desede_ecb_encrypt(cipher_interface_t* self, const char* text)
 {
     if (!self || !text) return NULL;
-    desede_ecb_data_t* data = self->private_data;
+    desede_ecb_android_old_data_t* data = self->private_data;
     if (!data) return NULL;
     const size_t text_len = strlen(text);
     size_t r1_len;
@@ -109,7 +109,7 @@ static char* desede_ecb_encrypt(cipher_interface_t* self, const char* text)
 static char* desede_ecb_decrypt(cipher_interface_t* self, const char* hex)
 {
     if (!self || !hex) return NULL;
-    desede_ecb_data_t* data = self->private_data;
+    desede_ecb_android_old_data_t* data = self->private_data;
     if (!data) return NULL;
     size_t bytes_len;
     uint8_t* bytes = hex_2_bytes(hex, &bytes_len);
@@ -143,11 +143,11 @@ static void desede_ecb_destroy(cipher_interface_t* self)
     }
 }
 
-cipher_interface_t* create_desede_ecb_cipher(const uint8_t* key1, const uint8_t* key2)
+cipher_interface_t* create_desede_ecb_android_old_cipher(const uint8_t* key1, const uint8_t* key2)
 {
     if (!key1 || !key2) return NULL;
     cipher_interface_t* cipher = s_malloc(sizeof(cipher_interface_t));
-    desede_ecb_data_t* data = s_malloc(sizeof(desede_ecb_data_t));
+    desede_ecb_android_old_data_t* data = s_malloc(sizeof(desede_ecb_android_old_data_t));
     memcpy(data->key1, key1, 24);
     memcpy(data->key2, key2, 24);
     cipher->encrypt = desede_ecb_encrypt;

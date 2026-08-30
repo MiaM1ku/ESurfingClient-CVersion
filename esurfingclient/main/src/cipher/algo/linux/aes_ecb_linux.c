@@ -8,7 +8,7 @@
 typedef struct {
     uint8_t round_keys1[176];
     uint8_t round_keys2[176];
-} aes_ecb_pc_ctx_t;
+} aes_ecb_linux_ctx_t;
 
 static const uint8_t sbox[256] = {
     0x63,0x7C,0x77,0x7B,0xF2,0x6B,0x6F,0xC5,0x30,0x01,0x67,0x2B,0xFE,0xD7,0xAB,0x76,
@@ -173,10 +173,10 @@ static void aes128_decrypt_block(const uint8_t* in, uint8_t* out, const uint8_t*
     memcpy(out,s,16);
 }
 
-static char* aes_ecb_pc_encrypt(cipher_interface_t* self, const char* text)
+static char* aes_ecb_encrypt(cipher_interface_t* self, const char* text)
 {
     if (!self || !text) return NULL;
-    const aes_ecb_pc_ctx_t* ctx = self->private_data;
+    const aes_ecb_linux_ctx_t* ctx = self->private_data;
     const size_t len = s_strlen(text);
     const uint8_t* input = (const uint8_t*)text;
     size_t padded_len = 0;
@@ -195,10 +195,10 @@ static char* aes_ecb_pc_encrypt(cipher_interface_t* self, const char* text)
     return hex;
 }
 
-static char* aes_ecb_pc_decrypt(cipher_interface_t* self, const char* hex)
+static char* aes_ecb_decrypt(cipher_interface_t* self, const char* hex)
 {
     if (!self || !hex) return NULL;
-    const aes_ecb_pc_ctx_t* ctx = self->private_data;
+    const aes_ecb_linux_ctx_t* ctx = self->private_data;
     size_t in_len = 0;
     uint8_t* in = hex_2_bytes(hex, &in_len);
     if (!in || in_len % 16 != 0)
@@ -222,23 +222,23 @@ static char* aes_ecb_pc_decrypt(cipher_interface_t* self, const char* hex)
     return text;
 }
 
-static void aes_ecb_pc_destroy(cipher_interface_t* self)
+static void aes_ecb_destroy(cipher_interface_t* self)
 {
     if (!self) return;
     if (self->private_data) s_free(self->private_data);
     s_free(self);
 }
 
-cipher_interface_t* create_aes_ecb_pc_cipher(const uint8_t* key1, const uint8_t* key2)
+cipher_interface_t* create_aes_ecb_linux_cipher(const uint8_t* key1, const uint8_t* key2)
 {
     if (!key1 || !key2) return NULL;
     cipher_interface_t* ci = s_calloc(1, sizeof(cipher_interface_t));
-    aes_ecb_pc_ctx_t* ctx = s_calloc(1, sizeof(aes_ecb_pc_ctx_t));
+    aes_ecb_linux_ctx_t* ctx = s_calloc(1, sizeof(aes_ecb_linux_ctx_t));
     key_expansion(key1, ctx->round_keys1);
     key_expansion(key2, ctx->round_keys2);
-    ci->encrypt = aes_ecb_pc_encrypt;
-    ci->decrypt = aes_ecb_pc_decrypt;
-    ci->destroy = aes_ecb_pc_destroy;
+    ci->encrypt = aes_ecb_encrypt;
+    ci->decrypt = aes_ecb_decrypt;
+    ci->destroy = aes_ecb_destroy;
     ci->private_data = ctx;
     return ci;
 }

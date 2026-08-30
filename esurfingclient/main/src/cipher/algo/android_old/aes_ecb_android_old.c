@@ -8,7 +8,7 @@
 typedef struct {
     uint8_t key1[16];
     uint8_t key2[16];
-} aes_ecb_data_t;
+} aes_ecb_android_old_data_t;
 
 static uint8_t* aes_encrypt_ecb(const uint8_t* data, const size_t data_len,
                                 const uint8_t* key, size_t* out_len)
@@ -89,7 +89,7 @@ static uint8_t* aes_decrypt_ecb(const uint8_t* data, const size_t data_len,
 static char* aes_ecb_encrypt(cipher_interface_t* self, const char* text)
 {
     if (!self || !text) return NULL;
-    aes_ecb_data_t* data = self->private_data;
+    aes_ecb_android_old_data_t* data = self->private_data;
     if (!data) return NULL;
     const size_t text_len = strlen(text);
     size_t r1_len;
@@ -108,7 +108,7 @@ static char* aes_ecb_encrypt(cipher_interface_t* self, const char* text)
 static char* aes_ecb_decrypt(cipher_interface_t* self, const char* hex)
 {
     if (!self || !hex) return NULL;
-    aes_ecb_data_t* data = self->private_data;
+    aes_ecb_android_old_data_t* data = self->private_data;
     if (!data) return NULL;
     size_t bytes_len;
     uint8_t* bytes = hex_2_bytes(hex, &bytes_len);
@@ -141,11 +141,11 @@ static void aes_ecb_destroy(cipher_interface_t* self)
     }
 }
 
-cipher_interface_t* create_aes_ecb_cipher(const uint8_t* key1, const uint8_t* key2)
+cipher_interface_t* create_aes_ecb_android_old_cipher(const uint8_t* key1, const uint8_t* key2)
 {
     if (!key1 || !key2) return NULL;
     cipher_interface_t* cipher = s_malloc(sizeof(cipher_interface_t));
-    aes_ecb_data_t* data = s_malloc(sizeof(aes_ecb_data_t));
+    aes_ecb_android_old_data_t* data = s_malloc(sizeof(aes_ecb_android_old_data_t));
     memcpy(data->key1, key1, 16);
     memcpy(data->key2, key2, 16);
     cipher->encrypt = aes_ecb_encrypt;

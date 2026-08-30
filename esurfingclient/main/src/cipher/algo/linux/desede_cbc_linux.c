@@ -10,7 +10,7 @@ typedef struct {
     uint8_t key2[24];
     uint8_t iv1[8];
     uint8_t iv2[8];
-} desede_cbc_pc_data_t;
+} desede_cbc_linux_data_t;
 
 static const int IP[64] = {
   58,50,42,34,26,18,10,2,60,52,44,36,28,20,12,4,62,54,46,38,30,22,14,6,64,56,48,40,32,24,16,8,57,49,41,33,25,17,9,1,59,51,43,35,27,19,11,3,61,53,45,37,29,21,13,5,63,55,47,39,31,23,15,7
@@ -205,10 +205,10 @@ static void stage_decrypt(uint8_t *buf, const size_t len,
   }
 }
 
-static char* desede_cbc_pc_encrypt(cipher_interface_t* self, const char* text)
+static char* desede_cbc_encrypt(cipher_interface_t* self, const char* text)
 {
   if (!self || !text) return NULL;
-  desede_cbc_pc_data_t* data = self->private_data;
+  desede_cbc_linux_data_t* data = self->private_data;
   if (!data) return NULL;
   const size_t text_len = strlen(text);
   size_t padded_len;
@@ -221,10 +221,10 @@ static char* desede_cbc_pc_encrypt(cipher_interface_t* self, const char* text)
   return hex;
 }
 
-static char* desede_cbc_pc_decrypt(cipher_interface_t* self, const char* hex)
+static char* desede_cbc_decrypt(cipher_interface_t* self, const char* hex)
 {
   if (!self || !hex) return NULL;
-  desede_cbc_pc_data_t* data = self->private_data;
+  desede_cbc_linux_data_t* data = self->private_data;
   if (!data) return NULL;
   size_t bytes_len;
   uint8_t* bytes = hex_2_bytes(hex, &bytes_len);
@@ -242,7 +242,7 @@ static char* desede_cbc_pc_decrypt(cipher_interface_t* self, const char* hex)
   return result;
 }
 
-static void desede_cbc_pc_destroy(cipher_interface_t* self)
+static void desede_cbc_destroy(cipher_interface_t* self)
 {
   if (self)
   {
@@ -251,19 +251,19 @@ static void desede_cbc_pc_destroy(cipher_interface_t* self)
   }
 }
 
-cipher_interface_t* create_desede_cbc_pc_cipher(const uint8_t* key1, const uint8_t* key2,
+cipher_interface_t* create_desede_cbc_linux_cipher(const uint8_t* key1, const uint8_t* key2,
                                                 const uint8_t* iv1, const uint8_t* iv2)
 {
   if (!key1 || !key2 || !iv1 || !iv2) return NULL;
   cipher_interface_t* c = s_malloc(sizeof(cipher_interface_t));
-  desede_cbc_pc_data_t* d = s_malloc(sizeof(desede_cbc_pc_data_t));
+  desede_cbc_linux_data_t* d = s_malloc(sizeof(desede_cbc_linux_data_t));
   memcpy(d->key1, key1, 24);
   memcpy(d->key2, key2, 24);
   memcpy(d->iv1, iv1, 8);
   memcpy(d->iv2, iv2, 8);
-  c->encrypt = desede_cbc_pc_encrypt;
-  c->decrypt = desede_cbc_pc_decrypt;
-  c->destroy = desede_cbc_pc_destroy;
+  c->encrypt = desede_cbc_encrypt;
+  c->decrypt = desede_cbc_decrypt;
+  c->destroy = desede_cbc_destroy;
   c->private_data = d;
   return c;
 }
