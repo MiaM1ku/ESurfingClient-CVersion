@@ -117,7 +117,7 @@ jobs:
           
           scripts/feeds install esurfingclient
           
-          make package/esurfingclient/compile -j$(nproc) V=sc
+          make package/esurfingclient/compile -j$(nproc)
 
           find bin/packages -name "esurfingclient*.ipk" -exec cp {} ../esurfingclient_${{ inputs.version }}-${{ inputs.release }}_qualcommax_ipq60xx.ipk \;
 
