@@ -122,17 +122,19 @@
 
 ### 爱发电
 
-<img alt="Please refresh" src="image/fund/01.png"/>
-<img alt="Please refresh" src="image/fund/02.png"/>
-<img alt="Please refresh" src="image/fund/03.png"/>
+<img alt="Please refresh" src="image/fund/aifadian/1.png"/>
+<img alt="Please refresh" src="image/fund/aifadian/2.png"/>
+<img alt="Please refresh" src="image/fund/aifadian/3.png"/>
 
 ### 微信
 
-<img alt="Please refresh" height="256" src="image/fund/1.jpg" width="256"/>
-<img alt="Please refresh" height="256" src="image/fund/2.jpg" width="256"/>
-<img alt="Please refresh" height="256" src="image/fund/3.jpg" width="256"/>
-<img alt="Please refresh" height="256" src="image/fund/4.png" width="256"/>
-<img alt="Please refresh" height="256" src="image/fund/5.png" width="256"/>
-<img alt="Please refresh" height="256" src="image/fund/6.png" width="256"/>
-<img alt="Please refresh" height="256" src="image/fund/7.jpg" width="256"/>
-<img alt="Please refresh" height="256" src="image/fund/8.jpg" width="256"/>
+<img alt="Please refresh" height="256" src="image/fund/wechat/1.jpg" width="256"/>
+<img alt="Please refresh" height="256" src="image/fund/wechat/2.jpg" width="256"/>
+<img alt="Please refresh" height="256" src="image/fund/wechat/3.jpg" width="256"/>
+<img alt="Please refresh" height="256" src="image/fund/wechat/4.png" width="256"/>
+<img alt="Please refresh" height="256" src="image/fund/wechat/5.png" width="256"/>
+<img alt="Please refresh" height="256" src="image/fund/wechat/6.png" width="256"/>
+<img alt="Please refresh" height="256" src="image/fund/wechat/7.jpg" width="256"/>
+<img alt="Please refresh" height="256" src="image/fund/wechat/8.jpg" width="256"/>
+<img alt="Please refresh" height="256" src="image/fund/wechat/9.png" width="256"/>
+<img alt="Please refresh" height="256" src="image/fund/wechat/10.png" width="256"/>

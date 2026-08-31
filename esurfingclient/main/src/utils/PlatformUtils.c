@@ -26,6 +26,11 @@ static const char config_file[] = "/etc/config/esurfingclient";
 static char config_file[PATH_MAX + 1 + sizeof(DIALER_CONFIG_FILE)];
 #endif
 
+#define WINDOWS_UA "CCTP/WinSVR5/1068"
+#define LINUX_UA "CCTP/Linux64/1003"
+#define OLD_ANDROID_UA "CCTP/android64_vpn/2093"
+#define ANDROID_UA "CCTP/android11_64/2104"
+
 typedef struct
 {
     char ip[IP_LEN];
@@ -715,12 +720,12 @@ bool load_cfg()
         if (chn == NULL)
         {
             LOG_WARN("配置 %" PRIu8 " channel 参数不存在, 使用默认通道", i + 1);
-            snprintf(g_prog_status[valid_i].login_cfg.chn, CHN_LEN, "%s", "pc");
+            snprintf(g_prog_status[valid_i].login_cfg.chn, CHN_LEN, "%s", "phone");
         }
         else if (chn->valuestring[0] == '\0')
         {
             LOG_WARN("配置 %" PRIu8 " channel 参数为空, 使用默认通道", i + 1);
-            snprintf(g_prog_status[valid_i].login_cfg.chn, CHN_LEN, "%s", "pc");
+            snprintf(g_prog_status[valid_i].login_cfg.chn, CHN_LEN, "%s", "phone");
         }
         else
         {
@@ -730,16 +735,19 @@ bool load_cfg()
         // 转化成 UA
         if (strcmp(g_prog_status[valid_i].login_cfg.chn, "pc") == 0)
         {
-            snprintf(g_prog_status[valid_i].login_cfg.user_agent, USER_AGENT_LEN, "CCTP/Linux64/1003");
-            LOG_DEBUG("使用 UA: %s", g_prog_status[valid_i].login_cfg.user_agent);
-            LOG_DEBUG("当前使用下标: %" PRIu8, valid_i);
+            snprintf(g_prog_status[valid_i].login_cfg.user_agent, USER_AGENT_LEN, LINUX_UA);
         }
-        else if(strcmp(g_prog_status[0].login_cfg.chn, "phone") == 0)
+        else if (strcmp(g_prog_status[0].login_cfg.chn, "phone") == 0)
         {
-            snprintf(g_prog_status[valid_i].login_cfg.user_agent, USER_AGENT_LEN, "CCTP/Linux64/1003");
-            LOG_DEBUG("使用 UA: %s", g_prog_status[valid_i].login_cfg.user_agent);
-            LOG_DEBUG("当前使用下标: %" PRIu8, valid_i);
+            snprintf(g_prog_status[valid_i].login_cfg.user_agent, USER_AGENT_LEN, ANDROID_UA);
         }
+        else // windows 通道占位
+        {
+            snprintf(g_prog_status[valid_i].login_cfg.user_agent, USER_AGENT_LEN, ANDROID_UA);
+        }
+
+        LOG_INFO("使用 UA: %s", g_prog_status[valid_i].login_cfg.user_agent);
+        LOG_DEBUG("当前使用下标: %" PRIu8, valid_i);
 
         // 检查标记值
         if (mark == NULL)
@@ -827,12 +835,12 @@ bool load_cfg()
         if (chn == NULL)
         {
             LOG_WARN("配置 %" PRIu8 " channel 参数不存在, 使用默认通道", i + 1);
-            snprintf(g_prog_status[0].login_cfg.chn, CHN_LEN, "%s", "pc");
+            snprintf(g_prog_status[0].login_cfg.chn, CHN_LEN, "%s", "phone");
         }
         else if (chn->valuestring[0] == '\0')
         {
             LOG_WARN("配置 %" PRIu8 " channel 参数为空, 使用默认通道", i + 1);
-            snprintf(g_prog_status[0].login_cfg.chn, CHN_LEN, "%s", "pc");
+            snprintf(g_prog_status[0].login_cfg.chn, CHN_LEN, "%s", "phone");
         }
         else
         {
@@ -842,16 +850,19 @@ bool load_cfg()
         // 转化成 UA
         if (strcmp(g_prog_status[0].login_cfg.chn, "pc") == 0)
         {
-            snprintf(g_prog_status[0].login_cfg.user_agent, USER_AGENT_LEN, "CCTP/Linux64/1003");
-            LOG_DEBUG("使用 UA: %s", g_prog_status[0].login_cfg.user_agent);
-            LOG_DEBUG("当前使用下标: 0");
+            snprintf(g_prog_status[0].login_cfg.user_agent, USER_AGENT_LEN, LINUX_UA);
         }
-        else if(strcmp(g_prog_status[0].login_cfg.chn, "phone") == 0)
+        else if (strcmp(g_prog_status[0].login_cfg.chn, "phone") == 0)
         {
-            snprintf(g_prog_status[0].login_cfg.user_agent, USER_AGENT_LEN, "CCTP/Linux64/1003");
-            LOG_DEBUG("使用 UA: %s", g_prog_status[0].login_cfg.user_agent);
-            LOG_DEBUG("当前使用下标: 0");
+            snprintf(g_prog_status[0].login_cfg.user_agent, USER_AGENT_LEN, ANDROID_UA);
         }
+        else // windows 通道占位
+        {
+            snprintf(g_prog_status[0].login_cfg.user_agent, USER_AGENT_LEN, ANDROID_UA);
+        }
+
+        LOG_INFO("使用 UA: %s", g_prog_status[0].login_cfg.user_agent);
+        LOG_DEBUG("当前使用下标: 0");
 
         g_prog_status[0].login_cfg.idx = 1;
         LOG_INFO("配置 %" PRIu8 " 可用, 将会尝试使用", i + 1);
