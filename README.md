@@ -104,7 +104,7 @@
 > [!WARNING]
 > 不要让我发现有人拿去做路由器贩卖喔
 
-## 其他
+# 其他
 
 广东天翼校园网 QQ 交流群 (转自 [ESurfingPy-CLI
 ](https://github.com/Pandaft/ESurfingPy-CLI)): 791455104
