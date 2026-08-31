@@ -27,8 +27,7 @@
 
 static const char s_req_content_type[] = "Content-Type: application/x-www-form-urlencoded";
 static const char s_req_accept[] = "Accept: text/html,text/xml,application/xhtml+xml,application/x-javascript,*/*";
-static const char s_generate_url[] = "http://connect.rom.miui.com/generate_204";
-static const char s_backup_generate_url[] = "http://192.0.2.1";
+static const char s_generate_url[] = "http://223.5.5.5";
 
 static char s_school_id[SCHOOL_ID_LENGTH];
 static char s_domain[DOMAIN_LENGTH];
@@ -494,6 +493,12 @@ http_resp_t get(const char* url)
         resp.status = REQUEST_SUCCESS;
         return resp;
     }
+    if (resp_code == 404)
+    {
+        LOG_VERBOSE("资源不存在, 响应码: 404");
+        resp.status = REQUEST_NOT_FOUND;
+        return resp;
+    }
 
     LOG_ERROR("HTTP 响应错误, 响应码: %ld", resp_code);
     resp.status = REQUEST_ERROR;
@@ -502,16 +507,8 @@ http_resp_t get(const char* url)
 
 NetworkStatus check_network_status()
 {
-    http_resp_t resp = get(s_generate_url);
-    if (resp.curl_code == CURLE_COULDNT_RESOLVE_HOST)
-    {
-        LOG_WARN("DNS 解析错误, 使用备用超时方案重试");
-        resp = get(s_backup_generate_url);
-        if (resp.status == REQUEST_WARN)
-        {
-            resp.status = REQUEST_SUCCESS;
-        }
-    }
+    const http_resp_t resp = get(s_generate_url);
+    if (resp.status == REQUEST_NOT_FOUND) return REQUEST_SUCCESS; // 404代表已连接至互联网
     return resp.status;
 }
 
@@ -530,15 +527,7 @@ NetworkStatus get_last_location()
     do
     {
         resp = get(s_generate_url); // 检测响应码
-        if (resp.curl_code == CURLE_COULDNT_RESOLVE_HOST)
-        {
-            LOG_WARN("DNS 解析错误, 使用备用超时方案重试");
-            resp = get(s_backup_generate_url);
-            if (resp.status == REQUEST_WARN)
-            {
-                resp.status = REQUEST_SUCCESS;
-            }
-        }
+        if (resp.status == REQUEST_NOT_FOUND) resp.status = REQUEST_SUCCESS; // 404 代表已连接至互联网
         switch (resp.status)
         {
         case REQUEST_REDIRECT:
