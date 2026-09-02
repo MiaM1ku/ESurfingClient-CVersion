@@ -79,7 +79,7 @@
 
 [**OpenWRT 环境**](OpenWRT.md)
 
-[**OpenWRT 进阶 - 多播**](OpenWRT_mwan3.md)
+[**OpenWRT 进阶 - 多拨**](OpenWRT_mwan3.md)
 
 [**自行编译指南**](Compile.md)
 

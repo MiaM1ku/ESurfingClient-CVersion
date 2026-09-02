@@ -22,7 +22,6 @@
 
 #define USR_LEN 16
 #define PWD_LEN 128
-#define CHN_LEN 8
 
 #define IP_LEN 16
 #define IF_LEN 16
@@ -72,7 +71,7 @@ typedef struct
     /** @brief 密码 */
     char pwd[PWD_LEN];
     /** @brief 认证通道 */
-    char chn[CHN_LEN];
+    uint8_t chn;
     /** @brief 设备 UA */
     char user_agent[USER_AGENT_LEN];
     /** @brief 标记值 */
