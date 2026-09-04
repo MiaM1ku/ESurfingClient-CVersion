@@ -375,9 +375,12 @@ static bool extract_algo_id_from_zsm(const bytes_t zsm, char* algo_id)
 static bool load_cipher(const bytes_t zsm)
 {
     char algo_id[ALGO_ID_LEN];
+    const uint8_t chn = g_prog_status[tl_thread_idx].login_cfg.chn;
+    const bool ios_module = looks_like_ios_zsm(zsm.data, zsm.length);
 
     LOG_DEBUG("load 函数入口检查, 使用配置: %" PRIu8 ", 下标: %" PRIu8, g_prog_status[tl_thread_idx].login_cfg.idx, tl_thread_idx);
-    LOG_DEBUG("接收到的 zsm 数据长度: %zu", zsm.length);
+    LOG_INFO("当前通道: %" PRIu8 ", ZSM 长度: %zu, iOS 动态模块: %s",
+             chn, zsm.length, ios_module ? "是" : "否");
     if (zsm.data == NULL || zsm.length == 0) // 检查 zsm 数据是否为空, 为空则返回 false
     {
         LOG_ERROR("无效的 zsm 数据");
@@ -385,35 +388,52 @@ static bool load_cipher(const bytes_t zsm)
     }
 
     /**
-     * iOS 通道的密钥在 ZSM 解包后的 JS (cdckey/cdciv + cdy) 里,
-     * 不能按 Android/Linux 那样用头部 UUID 去查 CipherFactory.
+     * iOS PacketTunnel 的 ZSM 是 TEA+LZMA 后的 JS 模块, 头部 UUID 只是模块 ID,
+     * 不在 Android/Linux CipherFactory 里. 按内容识别, 避免 LuCI 仍是 phone/pc
+     * 时把 iOS ZSM 误送去查硬编码密钥表, 报 "未知 Algo-ID".
+     * 通道号只决定 UA/主机名, 不决定密钥解包方式.
      */
-    if (g_prog_status[tl_thread_idx].login_cfg.chn == 4)
+    if (chn == 4 || ios_module)
     {
+        if (chn != 4)
+        {
+            LOG_WARN("通道不是 iOS, 但 ticket 返回了 iOS 动态 ZSM, 按动态密钥解包, UA 不变");
+        }
         if (init_ios_cipher_from_zsm(zsm.data, zsm.length, algo_id) == false)
         {
-            LOG_ERROR("iOS 通道无法从 ZSM 解包出密钥 (长度 %zu)", zsm.length);
-            return false;
+            LOG_ERROR("无法按 iOS ZSM 解包出密钥 (长度 %zu, 通道 %" PRIu8 ")", zsm.length, chn);
+            if (chn == 4)
+            {
+                return false;
+            }
+            LOG_WARN("iOS ZSM 解包失败, 回退到 CipherFactory");
+        }
+        else
+        {
+            snprintf(g_prog_status[tl_thread_idx].auth_cfg.algo_id, ALGO_ID_LEN, "%s", safe_str(algo_id));
+            LOG_DEBUG("全局 AlgoID 已更新: %s", g_prog_status[tl_thread_idx].auth_cfg.algo_id);
+            return true;
         }
     }
-    else
-    {
-        if (extract_algo_id_from_zsm(zsm, algo_id) == false)
-        {
-            LOG_ERROR("无法从 ZSM 中提取 Algo-ID (长度 %zu)", zsm.length);
-            return false;
-        }
-        LOG_INFO("Algo ID: %s", algo_id);
 
-        /**
-         * 初始化加解密工厂
-         * 如果失败, 返回 false
-         */
-        if (init_cipher(algo_id) == false)
+    if (extract_algo_id_from_zsm(zsm, algo_id) == false)
+    {
+        LOG_ERROR("无法从 ZSM 中提取 Algo-ID (长度 %zu)", zsm.length);
+        return false;
+    }
+    LOG_INFO("Algo ID: %s", algo_id);
+
+    if (init_cipher(algo_id) == false)
+    {
+        LOG_WARN("CipherFactory 没有 Algo-ID %s, 尝试按 iOS 动态模块解包", algo_id);
+        if (init_ios_cipher_from_zsm(zsm.data, zsm.length, algo_id))
         {
-            LOG_ERROR("未知 Algo-ID: %s, 当前通道没有对应密钥", algo_id);
-            return false;
+            snprintf(g_prog_status[tl_thread_idx].auth_cfg.algo_id, ALGO_ID_LEN, "%s", safe_str(algo_id));
+            LOG_DEBUG("全局 AlgoID 已更新: %s", g_prog_status[tl_thread_idx].auth_cfg.algo_id);
+            return true;
         }
+        LOG_ERROR("未知 Algo-ID: %s, 当前通道没有对应密钥", algo_id);
+        return false;
     }
     snprintf(g_prog_status[tl_thread_idx].auth_cfg.algo_id, ALGO_ID_LEN, "%s", safe_str(algo_id)); // 将 algo_id 填入认证配置中
     LOG_DEBUG("全局 AlgoID 已更新: %s", g_prog_status[tl_thread_idx].auth_cfg.algo_id);
@@ -432,9 +452,17 @@ static bool init_session()
     LOG_DEBUG("init_session 函数入口检查, 使用配置: %" PRIu8 ", 下标: %" PRIu8, g_prog_status[tl_thread_idx].login_cfg.idx, tl_thread_idx);
 
     /**
-     * 使用初始 algo_id 向 ticket_url POST 获取数据
+     * 向 ticket_url POST 获取 ZSM.
+     * iOS PacketTunnel 在没有本地模块时 encodeData 返回空 body, 只带
+     * Algo-ID: 00000000-... . Android/Linux 仍 POST 全 0 UUID.
      */
-    const http_resp_t result = post(g_prog_status[tl_thread_idx].auth_cfg.ticket_url, g_prog_status[tl_thread_idx].auth_cfg.algo_id);
+    const char* ticket_body = g_prog_status[tl_thread_idx].auth_cfg.algo_id;
+    if (g_prog_status[tl_thread_idx].login_cfg.chn == 4)
+    {
+        ticket_body = "";
+        LOG_INFO("iOS 通道首次拉取 ZSM 使用空 POST");
+    }
+    const http_resp_t result = post(g_prog_status[tl_thread_idx].auth_cfg.ticket_url, ticket_body);
     if (result.status != REQUEST_HAVE_RES || result.body_size == 0 || result.body_data == NULL) // 响应错误或无响应数据, 则返回 false
     {
         LOG_ERROR("初始化会话失败");

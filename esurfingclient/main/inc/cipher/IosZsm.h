@@ -17,4 +17,11 @@
  */
 bool init_ios_cipher_from_zsm(const uint8_t* data, size_t length, char* algo_id_out);
 
+/**
+ * 判断 ticket 响应是否为 PacketTunnel IZsmModLoad 动态模块.
+ * 头部是两个 Pascal 字符串, 随后 LZMA packed type nibble == 2.
+ * 这种 ZSM 的 AID 不在 Android/Linux CipherFactory 里.
+ */
+bool looks_like_ios_zsm(const uint8_t* data, size_t length);
+
 #endif

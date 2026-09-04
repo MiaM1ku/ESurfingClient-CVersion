@@ -237,6 +237,59 @@ static cipher_interface_t* create_ios_ocode_cipher(int type, const uint8_t* key,
     }
 }
 
+
+static void log_zsm_prefix(const uint8_t* data, size_t length)
+{
+    char hex[97];
+    size_t n = length < 32 ? length : 32;
+    size_t i;
+    for (i = 0; i < n; i++)
+    {
+        sprintf(hex + i * 3, "%02X ", data[i]);
+    }
+    if (n)
+    {
+        hex[n * 3 - 1] = '\0';
+    }
+    else
+    {
+        hex[0] = '\0';
+    }
+    LOG_INFO("ZSM 前 %zu 字节: %s", n, hex);
+}
+
+bool looks_like_ios_zsm(const uint8_t* data, size_t length)
+{
+    size_t offset;
+    uint8_t len1;
+    uint8_t len2;
+    uint32_t packed;
+    uint32_t type_nibble;
+    uint32_t unpacked_size;
+
+    if (data == NULL || length < 15)
+    {
+        return false;
+    }
+    offset = 3;
+    len1 = data[offset++];
+    if (offset + len1 + 1 > length)
+    {
+        return false;
+    }
+    offset += len1;
+    len2 = data[offset++];
+    if (offset + len2 + 9 > length)
+    {
+        return false;
+    }
+    offset += len2;
+    packed = bytes_2_uint32_le(data + offset + 5);
+    type_nibble = packed >> 28;
+    unpacked_size = packed & 0x0FFFFFFFu;
+    return type_nibble == 2 && unpacked_size >= 1 && unpacked_size <= ZSM_MAX_UNPACKED;
+}
+
 static bool unwrap_ios_zsm(const uint8_t* data, size_t length, ios_zsm_blob_t* out)
 {
     size_t offset;
@@ -267,8 +320,13 @@ static bool unwrap_ios_zsm(const uint8_t* data, size_t length, ios_zsm_blob_t* o
     if (data == NULL || length < 15)
     {
         LOG_ERROR("iOS ZSM 太短: %zu", length);
+        if (data && length)
+        {
+            log_zsm_prefix(data, length);
+        }
         return false;
     }
+    log_zsm_prefix(data, length);
 
     offset = 3;
     len1 = data[offset++];
@@ -308,7 +366,9 @@ static bool unwrap_ios_zsm(const uint8_t* data, size_t length, ios_zsm_blob_t* o
     unpacked_size = packed & 0x0FFFFFFFu;
     if (type_nibble != 2 || unpacked_size == 0 || unpacked_size > ZSM_MAX_UNPACKED)
     {
-        LOG_ERROR("iOS ZSM packed 头非法: type=%u size=%u", type_nibble, unpacked_size);
+        LOG_ERROR("iOS ZSM packed 头非法: type=%u size=%u remain=%zu props=%02X %02X %02X %02X %02X",
+                  type_nibble, unpacked_size, remain,
+                  props[0], props[1], props[2], props[3], props[4]);
         return false;
     }
 
