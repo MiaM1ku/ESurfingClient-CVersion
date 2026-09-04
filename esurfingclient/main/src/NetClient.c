@@ -32,6 +32,61 @@ static const char s_generate_url[] = "http://223.5.5.5";
 static char s_school_id[SCHOOL_ID_LENGTH];
 static char s_domain[DOMAIN_LENGTH];
 static char s_area[AREA_LENGTH];
+static _Thread_local char s_request_url[LAST_LOCATION_LEN];
+
+static void resolve_url(char* out, size_t out_len, const char* base, const char* ref)
+{
+    if (out == NULL || out_len == 0) return;
+    out[0] = '\0';
+    if (ref == NULL || ref[0] == '\0')
+    {
+        if (base) snprintf(out, out_len, "%s", base);
+        return;
+    }
+    if (strncmp(ref, "http://", 7) == 0 || strncmp(ref, "https://", 8) == 0)
+    {
+        snprintf(out, out_len, "%s", ref);
+        return;
+    }
+    if (base == NULL || base[0] == '\0')
+    {
+        snprintf(out, out_len, "%s", ref);
+        return;
+    }
+    if (ref[0] == '/' && ref[1] == '/')
+    {
+        const char* scheme_end = strstr(base, "://");
+        if (scheme_end) snprintf(out, out_len, "%.*s:%s", (int)(scheme_end - base), base, ref);
+        else snprintf(out, out_len, "http:%s", ref);
+        return;
+    }
+
+    const char* scheme = strstr(base, "://");
+    const char* host_start = scheme ? scheme + 3 : base;
+    const char* path_start = strchr(host_start, '/');
+    if (ref[0] == '/')
+    {
+        if (path_start) snprintf(out, out_len, "%.*s%s", (int)(path_start - base), base, ref);
+        else snprintf(out, out_len, "%s%s", base, ref);
+        return;
+    }
+
+    if (path_start)
+    {
+        const char* query = strchr(path_start, '?');
+        const char* end = query ? query : path_start + strlen(path_start);
+        const char* last_slash = path_start;
+        for (const char* p = path_start; p < end; p++)
+        {
+            if (*p == '/') last_slash = p;
+        }
+        snprintf(out, out_len, "%.*s/%s", (int)(last_slash - base), base, ref);
+    }
+    else
+    {
+        snprintf(out, out_len, "%s/%s", base, ref);
+    }
+}
 
 char* extract_url_param(const char* url, const char* search_str_start)
 {
@@ -195,11 +250,17 @@ static size_t header_cb(const void* contents, const size_t size, const size_t nm
                     LOG_WARN("Location 被截断, 原长度: %zu, 缓冲区大小: %d", valid_len, LAST_LOCATION_LEN);
                 }
 
-                memcpy(g_prog_status[tl_thread_idx].last_location, value, copy_len);
-                g_prog_status[tl_thread_idx].last_location[copy_len] = '\0';
+                char location[LAST_LOCATION_LEN];
+                memcpy(location, value, copy_len);
+                location[copy_len] = '\0';
+
+                char resolved[LAST_LOCATION_LEN];
+                resolve_url(resolved, sizeof(resolved), s_request_url, location);
+                snprintf(g_prog_status[tl_thread_idx].last_location, LAST_LOCATION_LEN, "%s", resolved);
 
                 LOG_VERBOSE("现在的 last_location: %s (长度: %zu)",
-                            g_prog_status[tl_thread_idx].last_location, copy_len);
+                            g_prog_status[tl_thread_idx].last_location,
+                            strlen(g_prog_status[tl_thread_idx].last_location));
             }
         }
     }
@@ -435,6 +496,7 @@ http_resp_t get(const char* url)
 
     if (tl_thread_idx > -1)
     {
+        snprintf(s_request_url, sizeof(s_request_url), "%s", safe_str(url));
         snprintf(ua, MAX_LEN, "User-Agent: %s", safe_str(g_prog_status[tl_thread_idx].login_cfg.user_agent));
         snprintf(c_id, MAX_LEN, "Client-ID: %s", safe_str(g_prog_status[tl_thread_idx].auth_cfg.client_id));
 
@@ -579,6 +641,12 @@ NetworkStatus get_last_location()
     uint8_t retry = 1;
     do
     {
+        if (resp.body_data)
+        {
+            free(resp.body_data);
+            resp.body_data = NULL;
+            resp.body_size = 0;
+        }
         resp = get(s_generate_url); // 检测响应码
         if (resp.status == REQUEST_NOT_FOUND) resp.status = REQUEST_SUCCESS; // 404 代表已连接至互联网
         switch (resp.status)
@@ -594,6 +662,7 @@ NetworkStatus get_last_location()
             if (retry > 5)
             {
                 LOG_FATAL("超过最多重试次数");
+                if (resp.body_data) free(resp.body_data);
                 return REQUEST_ERROR;
             }
             LOG_WARN("非重定向, 响应码: %d, 重试: 第 %" PRIu8 " 次, 最多 5 次", resp.status, retry);
@@ -603,7 +672,29 @@ NetworkStatus get_last_location()
         }
     } while (resp.status != REQUEST_REDIRECT);
 
-    while (resp.status == REQUEST_REDIRECT) resp = get(g_prog_status[tl_thread_idx].last_location);
+    while (resp.status == REQUEST_REDIRECT)
+    {
+        if (resp.body_data)
+        {
+            free(resp.body_data);
+            resp.body_data = NULL;
+            resp.body_size = 0;
+        }
+        resp = get(g_prog_status[tl_thread_idx].last_location);
+    }
+
+    if (resp.body_data)
+    {
+        free(resp.body_data);
+        resp.body_data = NULL;
+        resp.body_size = 0;
+    }
+
+    if (resp.status != REQUEST_HAVE_RES)
+    {
+        LOG_ERROR("跟随重定向后未获得认证页面, 状态: %d", resp.status);
+        return REQUEST_ERROR;
+    }
 
     g_prog_status[tl_thread_idx].last_location_lock = true;
     LOG_DEBUG("配置 %" PRIu8 " 获取认证配置 URL: %s", g_prog_status[tl_thread_idx].login_cfg.idx, g_prog_status[tl_thread_idx].last_location);
