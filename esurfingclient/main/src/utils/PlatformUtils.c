@@ -720,42 +720,42 @@ bool load_cfg()
         if (chn == NULL)
         {
             LOG_WARN("配置 %" PRIu8 " channel 参数不存在, 使用默认通道", i + 1);
-            g_prog_status[0].login_cfg.chn = 3;
+            g_prog_status[valid_i].login_cfg.chn = 3;
         }
         else
         {
             if (cJSON_IsNumber(chn))
             {
-                g_prog_status[0].login_cfg.chn = chn->valueint;
+                g_prog_status[valid_i].login_cfg.chn = chn->valueint;
             }
             else
             {
                 LOG_WARN("配置 %" PRIu8 " channel 参数错误, 使用默认通道", i + 1);
-                g_prog_status[0].login_cfg.chn = 3;
+                g_prog_status[valid_i].login_cfg.chn = 3;
             }
         }
 
         // 转化成 UA
-        switch (g_prog_status[0].login_cfg.chn)
+        switch (g_prog_status[valid_i].login_cfg.chn)
         {
         case 1:
             LOG_INFO("使用通道: Windows (暂未实现, 使用 Android 通道)");
-            snprintf(g_prog_status[0].login_cfg.user_agent, USER_AGENT_LEN, ANDROID_UA);
+            snprintf(g_prog_status[valid_i].login_cfg.user_agent, USER_AGENT_LEN, ANDROID_UA);
             break;
         case 2:
             LOG_INFO("使用通道: Linux");
-            snprintf(g_prog_status[0].login_cfg.user_agent, USER_AGENT_LEN, LINUX_UA);
+            snprintf(g_prog_status[valid_i].login_cfg.user_agent, USER_AGENT_LEN, LINUX_UA);
             break;
         case 3:
             LOG_INFO("使用通道: Android");
-            snprintf(g_prog_status[0].login_cfg.user_agent, USER_AGENT_LEN, ANDROID_UA);
+            snprintf(g_prog_status[valid_i].login_cfg.user_agent, USER_AGENT_LEN, ANDROID_UA);
             break;
         default:
             LOG_WARN("配置 %" PRIu8 " channel 参数错误, 使用默认通道 (Android)", i + 1);
-            snprintf(g_prog_status[0].login_cfg.user_agent, USER_AGENT_LEN, ANDROID_UA);
+            snprintf(g_prog_status[valid_i].login_cfg.user_agent, USER_AGENT_LEN, ANDROID_UA);
         }
 
-        LOG_DEBUG("使用 UA: %s", g_prog_status[0].login_cfg.user_agent);
+        LOG_DEBUG("使用 UA: %s", g_prog_status[valid_i].login_cfg.user_agent);
         LOG_DEBUG("当前使用下标: %" PRIu8, valid_i);
 
         // 检查标记值
