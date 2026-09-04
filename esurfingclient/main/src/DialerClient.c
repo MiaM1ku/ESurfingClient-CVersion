@@ -6,6 +6,7 @@
 #include "NetClient.h"
 #include "States.h"
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -261,10 +262,120 @@ static bool get_ticket()
     return true;
 }
 
+static bool is_uuid_text(const uint8_t* data, size_t length)
+{
+    static const uint8_t hyphen_pos[] = {8, 13, 18, 23};
+    size_t i;
+    unsigned hyphen_i = 0;
+
+    if (data == NULL || length != 36)
+    {
+        return false;
+    }
+
+    for (i = 0; i < 36; i++)
+    {
+        if (hyphen_i < 4 && i == hyphen_pos[hyphen_i])
+        {
+            if (data[i] != '-')
+            {
+                return false;
+            }
+            hyphen_i++;
+            continue;
+        }
+        if (!isxdigit(data[i]))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+static void uuid_to_upper(char* dst, const uint8_t* src)
+{
+    size_t i;
+    for (i = 0; i < 36; i++)
+    {
+        dst[i] = (char)toupper((unsigned char)src[i]);
+    }
+    dst[36] = '\0';
+}
+
+static bool read_zsm_pascal_string(const uint8_t* data, size_t length, size_t* offset, const uint8_t** out, size_t* out_len)
+{
+    uint8_t str_len;
+
+    if (data == NULL || offset == NULL || *offset >= length)
+    {
+        return false;
+    }
+    str_len = data[*offset];
+    (*offset)++;
+    if (*offset + str_len > length)
+    {
+        return false;
+    }
+    *out = data + *offset;
+    *out_len = str_len;
+    *offset += str_len;
+    return true;
+}
+
+static bool extract_algo_id_from_zsm(const bytes_t zsm, char* algo_id)
+{
+    size_t offset;
+    const uint8_t* str1 = NULL;
+    const uint8_t* str2 = NULL;
+    size_t str1_len = 0;
+    size_t str2_len = 0;
+    size_t end;
+
+    if (zsm.data == NULL || algo_id == NULL || zsm.length < 5)
+    {
+        return false;
+    }
+
+    offset = 3;
+    if (read_zsm_pascal_string(zsm.data, zsm.length, &offset, &str1, &str1_len)
+        && read_zsm_pascal_string(zsm.data, zsm.length, &offset, &str2, &str2_len))
+    {
+        if (is_uuid_text(str2, str2_len))
+        {
+            uuid_to_upper(algo_id, str2);
+            return true;
+        }
+        if (is_uuid_text(str1, str1_len))
+        {
+            uuid_to_upper(algo_id, str1);
+            return true;
+        }
+    }
+
+    end = zsm.length;
+    while (end > 0)
+    {
+        const unsigned char c = zsm.data[end - 1];
+        if (c == '\n' || c == '\r' || c == '\0' || c == ' ' || c == '\t')
+        {
+            end--;
+            continue;
+        }
+        break;
+    }
+    if (end >= 36 && is_uuid_text(zsm.data + (end - 36), 36))
+    {
+        uuid_to_upper(algo_id, zsm.data + (end - 36));
+        return true;
+    }
+    return false;
+}
+
 static bool load_cipher(const bytes_t zsm)
 {
-    LOG_DEBUG("load 函数入口检查, 使用配置: %" PRIu8 ", 下标: %" PRIu8, g_prog_status[tl_thread_idx].login_cfg.idx, tl_thread_idx);
+    char algo_id[ALGO_ID_LEN];
 
+    LOG_DEBUG("load 函数入口检查, 使用配置: %" PRIu8 ", 下标: %" PRIu8, g_prog_status[tl_thread_idx].login_cfg.idx, tl_thread_idx);
     LOG_DEBUG("接收到的 zsm 数据长度: %zu", zsm.length);
     if (zsm.data == NULL || zsm.length == 0) // 检查 zsm 数据是否为空, 为空则返回 false
     {
@@ -272,28 +383,11 @@ static bool load_cipher(const bytes_t zsm)
         return false;
     }
 
-    /**
-     * 提取 zsm 数据到 str 栈中
-     */
-    char str[zsm.length + 1];
-    memcpy(str, zsm.data, zsm.length);
-    str[zsm.length] = '\0';
-
-    const size_t length = strlen(str); // 获取 str 长度
-    LOG_DEBUG("原始字符串: %s", str);
-    LOG_DEBUG("字符串长度: %zu", length);
-    if (length < 4 + 38) // 判断长度, 不足指定长度返回 false
+    if (extract_algo_id_from_zsm(zsm, algo_id) == false)
     {
-        LOG_ERROR("字符串长度不足");
+        LOG_ERROR("无法从 ZSM 中提取 Algo-ID (长度 %zu)", zsm.length);
         return false;
     }
-
-    /**
-     * 提取 algo_id
-     */
-    char algo_id[ALGO_ID_LEN];
-    memcpy(algo_id, str + length - 37, ALGO_ID_LEN - 1);
-    algo_id[ALGO_ID_LEN - 1] = '\0';
     LOG_INFO("Algo ID: %s", algo_id);
 
     /**
@@ -302,7 +396,7 @@ static bool load_cipher(const bytes_t zsm)
      */
     if (init_cipher(algo_id) == false)
     {
-        LOG_ERROR("初始化加解密工厂失败");
+        LOG_ERROR("未知 Algo-ID: %s, 当前通道没有对应密钥", algo_id);
         return false;
     }
     snprintf(g_prog_status[tl_thread_idx].auth_cfg.algo_id, ALGO_ID_LEN, "%s", safe_str(algo_id)); // 将 algo_id 填入认证配置中
@@ -331,26 +425,30 @@ static bool init_session()
         free(result.body_data);
         return false;
     }
-    LOG_VERBOSE("会话响应内容: %s", result.body_data);
-    const bytes_t zsm = str2bytes(result.body_data); // 将响应体数据转成 bytes 类型
-    free(result.body_data);
-
-    LOG_DEBUG("开始初始化会话");
-
-    /**
-     * 加载加解密工厂
-     * 如果失败, 返回 false
-     */
-    if (load_cipher(zsm) == false)
+    LOG_DEBUG("会话响应长度: %zu", result.body_size);
     {
-        LOG_DEBUG("初始化会话失败");
-        g_prog_status[tl_thread_idx].runtime_status.is_initialized = 0;
-        free(zsm.data);
-        return false;
+        const bytes_t zsm = {
+            .data = (uint8_t*)result.body_data,
+            .length = result.body_size
+        };
+
+        LOG_DEBUG("开始初始化会话");
+
+        /**
+         * 加载加解密工厂
+         * 如果失败, 返回 false
+         */
+        if (load_cipher(zsm) == false)
+        {
+            LOG_DEBUG("初始化会话失败");
+            g_prog_status[tl_thread_idx].runtime_status.is_initialized = 0;
+            free(result.body_data);
+            return false;
+        }
     }
     LOG_DEBUG("初始化会话成功");
     g_prog_status[tl_thread_idx].runtime_status.is_initialized = 1;
-    free(zsm.data);
+    free(result.body_data);
     return true;
 }
 
