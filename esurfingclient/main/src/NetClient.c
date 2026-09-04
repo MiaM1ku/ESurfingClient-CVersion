@@ -35,21 +35,39 @@ static char s_area[AREA_LENGTH];
 
 char* extract_url_param(const char* url, const char* search_str_start)
 {
-    if (url == NULL)
+    if (url == NULL || search_str_start == NULL)
     {
         LOG_ERROR("URL 为空");
         return NULL;
     }
-    const size_t len = strlen(search_str_start);
-    char* search_pattern = malloc(len + 2);
-    if (search_pattern == NULL)
+
+    const size_t name_len = strlen(search_str_start);
+    char search_pattern[64];
+    if (name_len + 2 > sizeof(search_pattern))
+    {
+        LOG_ERROR("参数名过长");
+        return NULL;
+    }
+    snprintf(search_pattern, sizeof(search_pattern), "%s=", search_str_start);
+
+    const char* start = strstr(url, search_pattern);
+    if (start == NULL)
+    {
+        LOG_ERROR("未找到参数: %s", search_pattern);
+        return NULL;
+    }
+    start += name_len + 1;
+
+    /* 最后一个参数后面没有 '&', 也要能截取到结尾或 '#' */
+    const size_t value_len = strcspn(start, "&#");
+    char* result = malloc(value_len + 1);
+    if (result == NULL)
     {
         LOG_ERROR("分配内存失败");
         return NULL;
     }
-    snprintf(search_pattern, len + 2, "%s=", search_str_start);
-    char* result = extract_between_tags(url, search_pattern, "&");
-    free(search_pattern);
+    memcpy(result, start, value_len);
+    result[value_len] = '\0';
     return result;
 }
 
@@ -514,9 +532,44 @@ NetworkStatus check_network_status()
 
 static void get_school_ip_symbol()
 {
-    const char* school_ip = extract_url_param(g_prog_status[0].last_location, "wlanuserip");
-    snprintf(g_school_network_symbol, SCHOOL_NETWORK_SYMBOL, "%s", safe_str(extract_between_tags(school_ip, "", strchr(strchr(school_ip, '.') + 1, '.'))));
+    if (g_school_network_symbol[0] != '\0')
+    {
+        return;
+    }
+    if (tl_thread_idx < 0)
+    {
+        return;
+    }
+
+    /* 必须用当前线程的 last_location。配置 1 已联网时 g_prog_status[0].last_location 为空。 */
+    char* school_ip = extract_url_param(g_prog_status[tl_thread_idx].last_location, "wlanuserip");
+    if (school_ip == NULL)
+    {
+        LOG_ERROR("无法从 last_location 提取 wlanuserip");
+        return;
+    }
+
+    const char* first_dot = strchr(school_ip, '.');
+    const char* second_dot = first_dot ? strchr(first_dot + 1, '.') : NULL;
+    if (second_dot == NULL)
+    {
+        LOG_ERROR("wlanuserip 格式无效: %s", school_ip);
+        free(school_ip);
+        return;
+    }
+
+    const size_t len = (size_t)(second_dot - school_ip);
+    if (len == 0 || len >= SCHOOL_NETWORK_SYMBOL)
+    {
+        LOG_ERROR("校园网标志长度无效: %zu", len);
+        free(school_ip);
+        return;
+    }
+
+    memcpy(g_school_network_symbol, school_ip, len);
+    g_school_network_symbol[len] = '\0';
     LOG_INFO("获取到校园网标志: %s", g_school_network_symbol);
+    free(school_ip);
 }
 
 NetworkStatus get_last_location()
