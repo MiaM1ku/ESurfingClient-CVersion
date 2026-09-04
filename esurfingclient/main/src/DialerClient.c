@@ -1,4 +1,5 @@
 #include "cipher/CipherInterface.h"
+#include "cipher/IosZsm.h"
 #include "utils/PlatformUtils.h"
 #include "utils/Shutdown.h"
 #include "utils/Logger.h"
@@ -383,21 +384,36 @@ static bool load_cipher(const bytes_t zsm)
         return false;
     }
 
-    if (extract_algo_id_from_zsm(zsm, algo_id) == false)
-    {
-        LOG_ERROR("无法从 ZSM 中提取 Algo-ID (长度 %zu)", zsm.length);
-        return false;
-    }
-    LOG_INFO("Algo ID: %s", algo_id);
-
     /**
-     * 初始化加解密工厂
-     * 如果失败, 返回 false
+     * iOS 通道的密钥在 ZSM 解包后的 JS (cdckey/cdciv + cdy) 里,
+     * 不能按 Android/Linux 那样用头部 UUID 去查 CipherFactory.
      */
-    if (init_cipher(algo_id) == false)
+    if (g_prog_status[tl_thread_idx].login_cfg.chn == 4)
     {
-        LOG_ERROR("未知 Algo-ID: %s, 当前通道没有对应密钥", algo_id);
-        return false;
+        if (init_ios_cipher_from_zsm(zsm.data, zsm.length, algo_id) == false)
+        {
+            LOG_ERROR("iOS 通道无法从 ZSM 解包出密钥 (长度 %zu)", zsm.length);
+            return false;
+        }
+    }
+    else
+    {
+        if (extract_algo_id_from_zsm(zsm, algo_id) == false)
+        {
+            LOG_ERROR("无法从 ZSM 中提取 Algo-ID (长度 %zu)", zsm.length);
+            return false;
+        }
+        LOG_INFO("Algo ID: %s", algo_id);
+
+        /**
+         * 初始化加解密工厂
+         * 如果失败, 返回 false
+         */
+        if (init_cipher(algo_id) == false)
+        {
+            LOG_ERROR("未知 Algo-ID: %s, 当前通道没有对应密钥", algo_id);
+            return false;
+        }
     }
     snprintf(g_prog_status[tl_thread_idx].auth_cfg.algo_id, ALGO_ID_LEN, "%s", safe_str(algo_id)); // 将 algo_id 填入认证配置中
     LOG_DEBUG("全局 AlgoID 已更新: %s", g_prog_status[tl_thread_idx].auth_cfg.algo_id);
