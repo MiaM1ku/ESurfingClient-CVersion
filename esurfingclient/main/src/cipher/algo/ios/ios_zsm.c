@@ -28,6 +28,7 @@
  *   JS source at buf+0x103
  *
  * JS globals: cdckey, cdciv, cdy(type, mode, key, iv, data)
+ * type 常写在 var codex = 0xNN; 再 cdy(codex, ...)
  * type < 16 → oCode (1-9), type >= 16 → nCode (not ported yet)
  */
 
@@ -128,36 +129,201 @@ static bool zsm_copy_uuid(char* dst, const uint8_t* src, size_t len)
     return true;
 }
 
+static bool is_js_ident_start(unsigned char c)
+{
+    return isalpha(c) || c == '_' || c == '$';
+}
+
+static bool is_js_ident_cont(unsigned char c)
+{
+    return isalnum(c) || c == '_' || c == '$';
+}
+
+static void skip_js_ws_and_comments(const char** pp)
+{
+    const char* p = *pp;
+    while (*p)
+    {
+        if (isspace((unsigned char)*p))
+        {
+            p++;
+            continue;
+        }
+        if (p[0] == '/' && p[1] == '/')
+        {
+            p += 2;
+            while (*p && *p != '\n')
+            {
+                p++;
+            }
+            continue;
+        }
+        if (p[0] == '/' && p[1] == '*')
+        {
+            p += 2;
+            while (*p && !(p[0] == '*' && p[1] == '/'))
+            {
+                p++;
+            }
+            if (*p)
+            {
+                p += 2;
+            }
+            continue;
+        }
+        break;
+    }
+    *pp = p;
+}
+
+static bool parse_js_int(const char* s, const char** end, int* out)
+{
+    unsigned long v;
+    char* parsed = NULL;
+
+    if (s == NULL || *s == '\0')
+    {
+        return false;
+    }
+    if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
+    {
+        v = strtoul(s, &parsed, 16);
+    }
+    else if (isdigit((unsigned char)*s))
+    {
+        v = strtoul(s, &parsed, 10);
+    }
+    else
+    {
+        return false;
+    }
+    if (parsed == s || v > 32)
+    {
+        return false;
+    }
+    *out = (int)v;
+    if (end)
+    {
+        *end = parsed;
+    }
+    return true;
+}
+
+static int lookup_js_int_var(const char* js, const char* name, size_t name_len)
+{
+    const char* p = js;
+    int last = -1;
+
+    if (js == NULL || name == NULL || name_len == 0)
+    {
+        return -1;
+    }
+    while ((p = strstr(p, name)) != NULL)
+    {
+        const char* q;
+        int n;
+        const char* end;
+
+        if (p > js && is_js_ident_cont((unsigned char)p[-1]))
+        {
+            p += name_len;
+            continue;
+        }
+        if (is_js_ident_cont((unsigned char)p[name_len]))
+        {
+            p += name_len;
+            continue;
+        }
+        q = p + name_len;
+        skip_js_ws_and_comments(&q);
+        if (*q != '=')
+        {
+            p += name_len;
+            continue;
+        }
+        q++;
+        skip_js_ws_and_comments(&q);
+        if (parse_js_int(q, &end, &n) == false)
+        {
+            p += name_len;
+            continue;
+        }
+        last = n;
+        p = end;
+    }
+    return last;
+}
+
 static int parse_cdy_type(const char* js)
 {
     const char* p = js;
     int first = -1;
+    int from_codex;
 
     if (p == NULL)
     {
         return -1;
     }
+
+    /*
+     * PacketTunnel 下发的模块几乎都是:
+     *   var codex = 0x05;
+     *   function e(v) { return cdy(codex, 0, cdckey, cdciv, v); }
+     * 第一参数是变量, 不是字面量. 同时兼容 cdy(5, ...) / cdy(0x05, ...).
+     */
+    from_codex = lookup_js_int_var(js, "codex", 5);
+    if (from_codex >= 1)
+    {
+        LOG_INFO("iOS ZSM JS codex = %d (0x%02X)", from_codex, from_codex);
+    }
+
     while ((p = strstr(p, "cdy")) != NULL)
     {
         const char* q = p + 3;
-        int n = 0;
-        p += 3;
-        while (*q && isspace((unsigned char)*q)) q++;
+        int n = -1;
+        const char* end;
+
+        if (p > js && is_js_ident_cont((unsigned char)p[-1]))
+        {
+            p += 3;
+            continue;
+        }
+        if (is_js_ident_cont((unsigned char)*q))
+        {
+            p += 3;
+            continue;
+        }
+        skip_js_ws_and_comments(&q);
         if (*q != '(')
         {
+            p += 3;
             continue;
         }
         q++;
-        while (*q && isspace((unsigned char)*q)) q++;
-        if (!isdigit((unsigned char)*q))
+        skip_js_ws_and_comments(&q);
+        if (parse_js_int(q, &end, &n))
         {
-            continue;
+            q = end;
         }
-        while (isdigit((unsigned char)*q))
+        else if (is_js_ident_start((unsigned char)*q))
         {
-            n = n * 10 + (*q - '0');
-            q++;
+            const char* id = q;
+            size_t id_len;
+            while (is_js_ident_cont((unsigned char)*q))
+            {
+                q++;
+            }
+            id_len = (size_t)(q - id);
+            if (id_len == 5 && memcmp(id, "codex", 5) == 0 && from_codex >= 0)
+            {
+                n = from_codex;
+            }
+            else
+            {
+                n = lookup_js_int_var(js, id, id_len);
+            }
         }
+        p += 3;
         if (n < 1 || n > 32)
         {
             continue;
@@ -170,6 +336,10 @@ static int parse_cdy_type(const char* js)
         {
             LOG_WARN("ZSM JS 中存在多个 cdy 类型: %d 和 %d, 使用 %d", first, n, first);
         }
+    }
+    if (first < 0 && from_codex >= 1 && from_codex <= 32)
+    {
+        return from_codex;
     }
     return first;
 }
@@ -463,7 +633,7 @@ bool init_ios_cipher_from_zsm(const uint8_t* data, size_t length, char* algo_id_
     type = parse_cdy_type(blob.js);
     if (type < 0)
     {
-        LOG_ERROR("iOS ZSM JS 中没有找到 cdy(type, ...), 无法选择算法");
+        LOG_ERROR("iOS ZSM JS 中没有找到 cdy 类型 (literal 或 var codex = 0xNN), 无法选择算法");
         LOG_ERROR("JS: %.400s", blob.js);
         zsm_blob_free(&blob);
         return false;
