@@ -23,7 +23,9 @@ document.addEventListener('alpine:init', () => {
                 this.configs = data;
                 if (this.configs.accounts && this.configs.accounts[0]) {
                     const ch = this.configs.accounts[0].channel;
-                    if (ch === 4 || ch === '4' || ch === 'ios' || ch === 'iphone') {
+                    if (ch === 5 || ch === '5' || ch === 'macos' || ch === 'mac' || ch === 'osx') {
+                        this.configs.accounts[0].channel = 'macos';
+                    } else if (ch === 4 || ch === '4' || ch === 'ios' || ch === 'iphone') {
                         this.configs.accounts[0].channel = 'ios';
                     } else if (ch === 2 || ch === '2' || ch === 'pc' || ch === 'linux') {
                         this.configs.accounts[0].channel = 'pc';

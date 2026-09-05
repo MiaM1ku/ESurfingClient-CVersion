@@ -379,7 +379,7 @@ static bool load_cipher(const bytes_t zsm)
     const bool ios_module = looks_like_ios_zsm(zsm.data, zsm.length);
 
     LOG_DEBUG("load 函数入口检查, 使用配置: %" PRIu8 ", 下标: %" PRIu8, g_prog_status[tl_thread_idx].login_cfg.idx, tl_thread_idx);
-    LOG_INFO("当前通道: %" PRIu8 ", ZSM 长度: %zu, iOS 动态模块: %s",
+    LOG_INFO("当前通道: %" PRIu8 ", ZSM 长度: %zu, 动态 ZSM 模块: %s",
              chn, zsm.length, ios_module ? "是" : "否");
     if (zsm.data == NULL || zsm.length == 0) // 检查 zsm 数据是否为空, 为空则返回 false
     {
@@ -388,25 +388,24 @@ static bool load_cipher(const bytes_t zsm)
     }
 
     /**
-     * iOS PacketTunnel 的 ZSM 是 TEA+LZMA 后的 JS 模块, 头部 UUID 只是模块 ID,
-     * 不在 Android/Linux CipherFactory 里. 按内容识别, 避免 LuCI 仍是 phone/pc
-     * 时把 iOS ZSM 误送去查硬编码密钥表, 报 "未知 Algo-ID".
+     * iOS PacketTunnel / macOS GDCV 的 ZSM 都是 TEA+LZMA 后的 JS 模块,
+     * 头部 UUID 只是模块 ID, 不在 Android/Linux CipherFactory 里.
      * 通道号只决定 UA/主机名, 不决定密钥解包方式.
      */
-    if (chn == 4 || ios_module)
+    if (chn == 4 || chn == 5 || ios_module)
     {
-        if (chn != 4)
+        if (chn != 4 && chn != 5)
         {
-            LOG_WARN("通道不是 iOS, 但 ticket 返回了 iOS 动态 ZSM, 按动态密钥解包, UA 不变");
+            LOG_WARN("通道不是 iOS/macOS, 但 ticket 返回了动态 ZSM, 按动态密钥解包, UA 不变");
         }
         if (init_ios_cipher_from_zsm(zsm.data, zsm.length, algo_id) == false)
         {
-            LOG_ERROR("无法按 iOS ZSM 解包出密钥 (长度 %zu, 通道 %" PRIu8 ")", zsm.length, chn);
-            if (chn == 4)
+            LOG_ERROR("无法按动态 ZSM 解包出密钥 (长度 %zu, 通道 %" PRIu8 ")", zsm.length, chn);
+            if (chn == 4 || chn == 5)
             {
                 return false;
             }
-            LOG_WARN("iOS ZSM 解包失败, 回退到 CipherFactory");
+            LOG_WARN("动态 ZSM 解包失败, 回退到 CipherFactory");
         }
         else
         {
@@ -425,7 +424,7 @@ static bool load_cipher(const bytes_t zsm)
 
     if (init_cipher(algo_id) == false)
     {
-        LOG_WARN("CipherFactory 没有 Algo-ID %s, 尝试按 iOS 动态模块解包", algo_id);
+        LOG_WARN("CipherFactory 没有 Algo-ID %s, 尝试按动态 ZSM 解包", algo_id);
         if (init_ios_cipher_from_zsm(zsm.data, zsm.length, algo_id))
         {
             snprintf(g_prog_status[tl_thread_idx].auth_cfg.algo_id, ALGO_ID_LEN, "%s", safe_str(algo_id));
@@ -453,14 +452,14 @@ static bool init_session()
 
     /**
      * 向 ticket_url POST 获取 ZSM.
-     * iOS PacketTunnel 在没有本地模块时 encodeData 返回空 body, 只带
-     * Algo-ID: 00000000-... . Android/Linux 仍 POST 全 0 UUID.
+     * iOS/macOS 没有本地模块时 Algo-ID 为零 UUID, 首次用空 POST.
+     * Android/Linux 仍 POST 全 0 UUID.
      */
     const char* ticket_body = g_prog_status[tl_thread_idx].auth_cfg.algo_id;
-    if (g_prog_status[tl_thread_idx].login_cfg.chn == 4)
+    if (g_prog_status[tl_thread_idx].login_cfg.chn == 4 || g_prog_status[tl_thread_idx].login_cfg.chn == 5)
     {
         ticket_body = "";
-        LOG_INFO("iOS 通道首次拉取 ZSM 使用空 POST");
+        LOG_INFO("iOS/macOS 通道首次拉取 ZSM 使用空 POST");
     }
     const http_resp_t result = post(g_prog_status[tl_thread_idx].auth_cfg.ticket_url, ticket_body);
     if (result.status != REQUEST_HAVE_RES || result.body_size == 0 || result.body_data == NULL) // 响应错误或无响应数据, 则返回 false

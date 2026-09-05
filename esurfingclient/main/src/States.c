@@ -40,6 +40,14 @@ static void reset_host_name()
         LOG_DEBUG("iOS ostag: %s", auth_cfg->ostag);
         return;
     }
+    if (g_prog_status[tl_thread_idx].login_cfg.chn == 5)
+    {
+        snprintf(auth_cfg->host_name, HOST_NAME_LEN, "MacBookPro");
+        snprintf(auth_cfg->ostag, OSTAG_LEN, "macOS,14.4");
+        LOG_DEBUG("macOS 主机名: %s", auth_cfg->host_name);
+        LOG_DEBUG("macOS ostag: %s", auth_cfg->ostag);
+        return;
+    }
 
     char host_name[16];
     unsigned char host_bytes[10];

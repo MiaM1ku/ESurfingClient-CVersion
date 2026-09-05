@@ -73,6 +73,9 @@ static void fn(struct mg_connection *c, const int ev, void *ev_data)
                     case 4:
                         channel_name = "ios";
                         break;
+                    case 5:
+                        channel_name = "macos";
+                        break;
                     default:
                         channel_name = "phone";
                         break;

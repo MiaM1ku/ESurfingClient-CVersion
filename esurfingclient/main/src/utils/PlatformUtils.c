@@ -34,6 +34,7 @@ static char config_file[PATH_MAX + 1 + sizeof(DIALER_CONFIG_FILE)];
 #define OLD_ANDROID_UA "CCTP/android64_vpn/2093"
 #define ANDROID_UA "CCTP/android11_64/2104"
 #define IOS_UA "CCTP/iOSdy/4023"
+#define MACOS_UA "CCTP/macdy/5019"
 
 static bool channel_str_eq(const char* a, const char* b)
 {
@@ -55,7 +56,7 @@ static uint8_t parse_channel_json(const cJSON* chn, uint8_t cfg_no)
     if (cJSON_IsNumber(chn))
     {
         const int value = chn->valueint;
-        if (value >= 1 && value <= 4)
+        if (value >= 1 && value <= 5)
         {
             return (uint8_t)value;
         }
@@ -82,6 +83,10 @@ static uint8_t parse_channel_json(const cJSON* chn, uint8_t cfg_no)
         {
             return 4;
         }
+        if (channel_str_eq(value, "macos") || channel_str_eq(value, "mac") || channel_str_eq(value, "osx") || channel_str_eq(value, "5"))
+        {
+            return 5;
+        }
     }
 
     LOG_WARN("配置 %" PRIu8 " channel 参数错误, 使用默认通道 (Android)", cfg_no);
@@ -107,6 +112,10 @@ static void apply_channel_ua(login_cfg_t* cfg, uint8_t cfg_no)
     case 4:
         LOG_INFO("使用通道: iOS");
         snprintf(cfg->user_agent, USER_AGENT_LEN, IOS_UA);
+        break;
+    case 5:
+        LOG_INFO("使用通道: macOS");
+        snprintf(cfg->user_agent, USER_AGENT_LEN, MACOS_UA);
         break;
     default:
         LOG_WARN("配置 %" PRIu8 " channel 参数错误, 使用默认通道 (Android)", cfg_no);
